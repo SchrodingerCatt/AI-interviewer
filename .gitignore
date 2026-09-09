@@ -1,0 +1,17 @@
+# გარემოს ცვლადები (საიდუმლო გასაღებები)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# შენახული დასკვნები (შეიცავს თანამშრომლების საუბრებს — არ ეკუთვნის git-ს)
+data/summaries/*.json
+
+# OS/IDE
+.DS_Store
+.vscode/
