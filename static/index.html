@@ -10,308 +10,91 @@
 
 <style>
   :root {
-    --bg: #eef1ee;
-    --surface: #ffffff;
-    --ink: #1f2a24;
-    --ink-soft: #4b5750;
-    --muted: #7b8780;
-    --line: #d9ddd6;
-    --accent: #3f6659;       /* pine green — მთავარი მოქმედება / AI-ის ხმა */
-    --accent-dark: #2c4a41;
-    --accent-tint: #e2ebe6;
-    --gold: #b8863f;         /* მაღალი პრიორიტეტი */
-    --gold-tint: #f4e9d8;
-    --grey-tint: #eceeec;
-    --error: #a5433a;
-    --error-tint: #f6e4e1;
-    --radius-sm: 6px;
-    --radius-md: 10px;
+    --bg: #eef1ee; --surface: #ffffff; --ink: #1f2a24; --ink-soft: #4b5750; --muted: #7b8780;
+    --line: #d9ddd6; --accent: #3f6659; --accent-dark: #2c4a41; --accent-tint: #e2ebe6;
+    --gold: #b8863f; --gold-tint: #f4e9d8; --grey-tint: #eceeec; --error: #a5433a; --error-tint: #f6e4e1;
+    --radius-sm: 6px; --radius-md: 10px;
     --font-serif: "Noto Serif Georgian", "Noto Serif", serif;
     --font-sans: "Noto Sans Georgian", "Noto Sans", sans-serif;
   }
-
   * { box-sizing: border-box; }
   html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  .app { max-width: 760px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding: 28px 20px 40px; }
 
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .app {
-    max-width: 720px;
-    margin: 0 auto;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 28px 20px 0;
-  }
-
-  /* ---------- header ---------- */
-
-  .app-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 24px;
-  }
-
+  .app-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
   .brand { display: flex; align-items: flex-start; gap: 14px; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(155deg, var(--accent) 0%, var(--accent-dark) 100%); flex-shrink: 0; margin-top: 4px; }
+  .app-header h1 { font-family: var(--font-serif); font-weight: 600; font-size: 22px; margin: 0 0 4px; }
+  .tagline { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 42ch; line-height: 1.5; }
+  .header-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .manager-link { font-size: 12.5px; color: var(--ink-soft); text-decoration: none; }
+  .manager-link:hover { text-decoration: underline; }
 
-  .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(155deg, var(--accent) 0%, var(--accent-dark) 100%);
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  .app-header h1 {
-    font-family: var(--font-serif);
-    font-weight: 600;
-    font-size: 22px;
-    margin: 0 0 4px;
-    color: var(--ink);
-  }
-
-  .tagline {
-    margin: 0;
-    font-size: 13.5px;
-    color: var(--muted);
-    max-width: 42ch;
-    line-height: 1.5;
-  }
-
-  /* ---------- buttons ---------- */
-
-  .btn {
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    padding: 10px 18px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity .15s ease;
-    white-space: nowrap;
-  }
-
+  .btn { font-family: var(--font-sans); font-size: 14px; font-weight: 600; border-radius: var(--radius-sm); padding: 10px 18px; border: 1px solid transparent; cursor: pointer; transition: all .15s ease; white-space: nowrap; }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
   .btn-primary:disabled { background: var(--muted); opacity: .6; cursor: not-allowed; }
-
   .btn-outline { background: transparent; border-color: var(--accent); color: var(--accent-dark); }
   .btn-outline:hover { background: var(--accent-tint); }
-
   .btn-ghost { background: transparent; color: var(--ink-soft); padding: 6px 4px; }
   .btn-ghost:hover { color: var(--ink); text-decoration: underline; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
 
-  /* ---------- setup panel ---------- */
-
-  .setup-panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-
+  .setup-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; }
   .setup-panel h2 { font-family: var(--font-serif); font-size: 18px; margin: 0 0 6px; }
-
   .setup-hint { margin: 0 0 18px; color: var(--muted); font-size: 13.5px; }
-
-  .setup-fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 18px;
-  }
-
-  .setup-fields label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--ink-soft);
-    font-weight: 600;
-  }
-
+  .setup-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .setup-fields label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .required-mark { color: var(--error); }
-
-  .setup-fields input {
-    font-family: var(--font-sans);
-    font-size: 14.5px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--ink);
-  }
-
+  .setup-fields input { font-family: var(--font-sans); font-size: 14.5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); }
   .setup-fields input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .setup-fields input:invalid:not(:placeholder-shown) { border-color: var(--error); }
-
-  .field-error {
-    font-size: 12px;
-    color: var(--error);
-    margin-top: -10px;
-    margin-bottom: 12px;
-    min-height: 16px;
-  }
-
-  /* ---------- chat ---------- */
+  .field-error { font-size: 12px; color: var(--error); margin-top: -10px; margin-bottom: 12px; min-height: 16px; }
 
   .chat-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; padding-bottom: 20px; }
-
-  .context-pill {
-    align-self: flex-start;
-    font-size: 12px;
-    color: var(--ink-soft);
-    background: var(--accent-tint);
-    border-radius: 999px;
-    padding: 4px 12px;
-    margin-bottom: 10px;
-  }
-
-  .messages {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 4px 2px 20px;
-    overflow-y: auto;
-  }
-
+  .context-pill { align-self: flex-start; font-size: 12px; color: var(--ink-soft); background: var(--accent-tint); border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
+  .messages { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 4px 2px 20px; overflow-y: auto; }
   .msg { max-width: 80%; line-height: 1.55; font-size: 15px; padding: 12px 15px; }
-
-  .msg-ai {
-    align-self: flex-start;
-    background: var(--surface);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    color: var(--ink);
-  }
-
-  .msg-user {
-    align-self: flex-end;
-    background: var(--ink);
-    color: #fdfdfb;
-    border-radius: var(--radius-sm);
-  }
-
+  .msg-ai { align-self: flex-start; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .msg-user { align-self: flex-end; background: var(--ink); color: #fdfdfb; border-radius: var(--radius-sm); }
   .typing-indicator { display: flex; gap: 4px; align-self: flex-start; padding: 6px 4px 14px; }
-  .typing-indicator span {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
-    animation: blink 1.2s infinite ease-in-out;
-  }
+  .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite ease-in-out; }
   .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
   .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
-
-  .chat-input-row {
-    display: flex; gap: 10px; align-items: flex-end;
-    border-top: 1px solid var(--line); padding-top: 14px;
-  }
-
-  #chatInput {
-    flex: 1;
-    font-family: var(--font-sans);
-    font-size: 15px;
-    padding: 12px 14px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    resize: none;
-    max-height: 140px;
-    background: var(--surface);
-    color: var(--ink);
-  }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  .chat-input-row { display: flex; gap: 10px; align-items: flex-end; border-top: 1px solid var(--line); padding-top: 14px; }
+  #chatInput { flex: 1; font-family: var(--font-sans); font-size: 15px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); resize: none; max-height: 140px; background: var(--surface); color: var(--ink); }
   #chatInput:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-  .btn-send { flex-shrink: 0; }
+  .review-panel { padding-bottom: 40px; }
+  .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .review-header h2 { font-family: var(--font-serif); font-size: 20px; margin: 0; }
+  .review-meta { color: var(--muted); font-size: 13px; margin: 4px 0 20px; }
+  .review-empty { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; text-align: center; color: var(--muted); }
 
-  /* ---------- summary panel ---------- */
-
-  .summary-panel { padding-bottom: 40px; }
-
-  .summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  .summary-header h2 { font-family: var(--font-serif); font-size: 20px; margin: 0; }
-
-  .summary-meta { color: var(--muted); font-size: 13px; margin: 4px 0 6px; }
-
-  .saved-note {
-    display: inline-block;
-    font-size: 12px;
-    color: var(--accent-dark);
-    background: var(--accent-tint);
-    border-radius: 999px;
-    padding: 4px 12px;
-    margin-bottom: 16px;
+  .opp-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 18px 20px; margin-bottom: 16px; }
+  .opp-card.is-confirmed { border-left-color: var(--gold); background: var(--accent-tint); }
+  .opp-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .opp-card-title { font-family: var(--font-serif); font-weight: 600; font-size: 17px; margin: 0; }
+  .opp-badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--gold-tint); color: #7a5a24; }
+  .opp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .opp-field { display: flex; flex-direction: column; gap: 4px; }
+  .opp-field.full { grid-column: 1 / -1; }
+  .opp-field label { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .opp-field textarea, .opp-field input, .opp-field select {
+    font-family: var(--font-sans); font-size: 14px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); resize: vertical; min-height: 38px;
   }
-
-  .summary-text {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 16px 18px;
-    font-size: 14.5px;
-    line-height: 1.6;
-    margin-bottom: 24px;
+  .opp-field textarea:disabled, .opp-field input:disabled, .opp-field select:disabled {
+    background: transparent; border-color: transparent; color: var(--ink-soft); resize: none; padding-left: 0;
   }
+  .opp-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
-  .findings-list { display: flex; flex-direction: column; gap: 12px; }
-
-  .finding {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    padding: 16px 18px;
-  }
-
-  .finding[data-priority="high"] { border-left-color: var(--gold); }
-  .finding[data-priority="low"] { border-left-color: var(--muted); }
-
-  .finding-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-  .finding-title { font-family: var(--font-serif); font-weight: 600; font-size: 16px; margin: 0; }
-
-  .finding-tags { display: flex; gap: 6px; flex-shrink: 0; }
-
-  .tag {
-    font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
-    background: var(--grey-tint); color: var(--ink-soft);
-  }
-
-  .tag-priority-high { background: var(--gold-tint); color: #7a5a24; }
-  .tag-priority-medium { background: var(--accent-tint); color: var(--accent-dark); }
-  .tag-priority-low { background: var(--grey-tint); color: var(--muted); }
-
-  .finding-desc { margin: 0 0 10px; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
-
-  .finding-meta { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); }
-
-  /* ---------- error banner ---------- */
-
-  .error-banner {
-    background: var(--error-tint);
-    color: var(--error);
-    border: 1px solid var(--error);
-    border-radius: var(--radius-sm);
-    padding: 12px 16px;
-    font-size: 13.5px;
-    margin: 16px 0;
-  }
-
-  /* ---------- responsive ---------- */
+  .error-banner { background: var(--error-tint); color: var(--error); border: 1px solid var(--error); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13.5px; margin: 16px 0; }
+  .toast-banner { background: var(--accent-tint); color: var(--accent-dark); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; margin: 0 0 16px; }
 
   @media (max-width: 560px) {
-    .setup-fields { grid-template-columns: 1fr; }
+    .setup-fields, .opp-grid { grid-template-columns: 1fr; }
     .app-header { flex-direction: column; }
     .msg { max-width: 92%; }
   }
@@ -329,13 +112,15 @@
         <p class="tagline">AI ესაუბრება, ისმენს, პოულობს — სად შეიძლება ნაკლები რუტინა და მეტი აზრიანი მუშაობა</p>
       </div>
     </div>
-    <button id="summaryBtn" class="btn btn-outline" hidden>ანალიზის გენერირება</button>
+    <div class="header-actions">
+      <button id="summaryBtn" class="btn btn-outline" hidden>ანალიზის გენერირება</button>
+      <a class="manager-link" href="/manager.html">Manager View →</a>
+    </div>
   </header>
 
-  <!-- ინტერვიუს დაწყების ფორმა -->
   <section id="setupPanel" class="setup-panel">
     <h2>დავიწყოთ</h2>
-    <p class="setup-hint">დეპარტამენტი და პოზიცია სავალდებულოა — ეს ეხმარება AI-ს კონტექსტის შენარჩუნებაში მთელი საუბრის განმავლობაში.</p>
+    <p class="setup-hint">დეპარტამენტი და პოზიცია სავალდებულოა — ეს ეხმარება AI-ს კონტექსტის შენარჩუნებაში.</p>
     <div class="setup-fields">
       <label>
         <span>დეპარტამენტი <span class="required-mark">*</span></span>
@@ -350,31 +135,23 @@
     <button id="startBtn" class="btn btn-primary" disabled>საუბრის დაწყება</button>
   </section>
 
-  <!-- ჩატის სივრცე -->
   <section id="chatPanel" class="chat-panel" hidden>
     <div id="contextPill" class="context-pill"></div>
     <div id="messages" class="messages" aria-live="polite"></div>
-
-    <div id="typingIndicator" class="typing-indicator" hidden>
-      <span></span><span></span><span></span>
-    </div>
-
+    <div id="typingIndicator" class="typing-indicator" hidden><span></span><span></span><span></span></div>
     <form id="chatForm" class="chat-input-row">
       <textarea id="chatInput" placeholder="დაწერეთ პასუხი..." rows="1" autocomplete="off"></textarea>
-      <button type="submit" class="btn btn-primary btn-send" aria-label="გაგზავნა">გაგზავნა</button>
+      <button type="submit" class="btn btn-primary" aria-label="გაგზავნა">გაგზავნა</button>
     </form>
   </section>
 
-  <!-- სტრუქტურირებული შედეგი -->
-  <section id="summaryPanel" class="summary-panel" hidden>
-    <div class="summary-header">
-      <h2>საუბრის ანალიზი</h2>
+  <section id="reviewPanel" class="review-panel" hidden>
+    <div class="review-header">
+      <h2>გადახედეთ და დაადასტურეთ</h2>
       <button id="backToChatBtn" class="btn btn-ghost">← უკან საუბარში</button>
     </div>
-    <p id="summaryMeta" class="summary-meta"></p>
-    <p id="savedNote" class="saved-note" hidden></p>
-    <p id="summaryText" class="summary-text"></p>
-    <div id="findingsList" class="findings-list"></div>
+    <p class="review-meta">AI-მ ეს გამოავლინა თქვენი საუბრიდან. საჭიროების შემთხვევაში შეასწორეთ, შემდეგ დაადასტურეთ თითოეული ცალკე — დადასტურებული ჩანაწერები Manager View-ში გამოჩნდება.</p>
+    <div id="opportunitiesList"></div>
   </section>
 
   <div id="errorBanner" class="error-banner" hidden></div>
@@ -383,36 +160,23 @@
 
 <script>
 (function () {
-  // ---------------------------------------------------------------------
-  // მდგომარეობა — localStorage-ში ინახება, რომ გვერდის განახლებამაც
-  // არ დაკარგოს კონტექსტი (დეპარტამენტი/როლი + საუბრის ისტორია)
-  // ---------------------------------------------------------------------
-
-  const STORAGE_KEY = "ai_interviewer_session_v1";
+  const STORAGE_KEY = "ai_interviewer_session_v2";
 
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
     return { context: { department: "", role: "" }, history: [] };
   }
-
   function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) { /* ignore, e.g. storage disabled */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
   }
-
   const state = loadState();
-
-  // ---------------------------------------------------------------------
-  // DOM
-  // ---------------------------------------------------------------------
 
   const setupPanel = document.getElementById("setupPanel");
   const chatPanel = document.getElementById("chatPanel");
-  const summaryPanel = document.getElementById("summaryPanel");
+  const reviewPanel = document.getElementById("reviewPanel");
 
   const departmentInput = document.getElementById("departmentInput");
   const roleInput = document.getElementById("roleInput");
@@ -427,19 +191,18 @@
 
   const summaryBtn = document.getElementById("summaryBtn");
   const backToChatBtn = document.getElementById("backToChatBtn");
-  const summaryMeta = document.getElementById("summaryMeta");
-  const savedNote = document.getElementById("savedNote");
-  const summaryText = document.getElementById("summaryText");
-  const findingsList = document.getElementById("findingsList");
-
+  const opportunitiesList = document.getElementById("opportunitiesList");
   const errorBanner = document.getElementById("errorBanner");
 
-  const PRIORITY_LABEL = { high: "მაღალი პრიორიტეტი", medium: "საშუალო პრიორიტეტი", low: "დაბალი პრიორიტეტი" };
-  const CATEGORY_LABEL = { improvement: "პროცესის გაუმჯობესება", automation: "ავტომატიზაცია", ai: "AI-ს გამოყენება" };
-
-  // ---------------------------------------------------------------------
-  // დამხმარეები
-  // ---------------------------------------------------------------------
+  const FIELD_LABELS = {
+    process: "პროცესი", problem: "პრობლემა", current_method: "როგორ კეთდება დღეს",
+    frequency: "სიხშირე", time_estimate: "დროის დანახარჯი", existing_tools: "არსებული ხელსაწყოები",
+    main_difficulty: "მთავარი სირთულე", desired_outcome: "სასურველი შედეგი",
+    ai_relevance: "AI-ს რელევანტობა", automation_relevance: "ავტომატიზაციის რელევანტობა",
+  };
+  const TEXTAREA_FIELDS = ["problem", "current_method", "main_difficulty", "desired_outcome", "ai_relevance", "automation_relevance"];
+  const CATEGORY_OPTIONS = { improvement: "პროცესის გაუმჯობესება", automation: "ავტომატიზაცია", ai: "AI-ს გამოყენება" };
+  const PRIORITY_OPTIONS = { high: "მაღალი", medium: "საშუალო", low: "დაბალი" };
 
   function showError(message) {
     errorBanner.textContent = message;
@@ -458,7 +221,6 @@
     div.textContent = text;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
-    return div;
   }
 
   function setTyping(isTyping) {
@@ -466,23 +228,11 @@
     if (isTyping) messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  function escapeText(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
   function validateSetup() {
-    const dep = departmentInput.value.trim();
-    const role = roleInput.value.trim();
-    const valid = dep.length > 0 && role.length > 0;
+    const valid = departmentInput.value.trim().length > 0 && roleInput.value.trim().length > 0;
     startBtn.disabled = !valid;
     return valid;
   }
-
-  // ---------------------------------------------------------------------
-  // საწყისი მდგომარეობის აღდგენა (თუ localStorage-ში იყო შენახული საუბარი)
-  // ---------------------------------------------------------------------
 
   function restoreIfPossible() {
     if (state.context.department && state.context.role && state.history.length > 0) {
@@ -496,10 +246,6 @@
     }
   }
 
-  // ---------------------------------------------------------------------
-  // ინტერვიუს დაწყება
-  // ---------------------------------------------------------------------
-
   departmentInput.addEventListener("input", validateSetup);
   roleInput.addEventListener("input", validateSetup);
 
@@ -509,7 +255,6 @@
       return;
     }
     setupError.textContent = "";
-
     state.context.department = departmentInput.value.trim();
     state.context.role = roleInput.value.trim();
     state.history = [];
@@ -521,66 +266,43 @@
     contextPill.textContent = `${state.context.department} · ${state.context.role}`;
     chatInput.focus();
 
-    // AI იწყებს პირველი კითხვით — ეს "სათესლე" შეტყობინება მხოლოდ
-    // ტრიგერია და საბოლოო ისტორიაში არ ინახება
-    await requestAiTurn([
-      {
-        role: "user",
-        text: "გამარჯობა! მზად ვარ ჩვენს სამუშაო პროცესზე საუბრისთვის. დაიწყე შენი პირველი კითხვით.",
-      },
-    ]);
+    await requestAiTurn([{ role: "user", text: "გამარჯობა! მზად ვარ საუბრისთვის. დაიწყე შენი პირველი შეტყობინებით." }]);
   });
-
-  // ---------------------------------------------------------------------
-  // ჩატის გაგზავნა
-  // ---------------------------------------------------------------------
 
   chatInput.addEventListener("input", autoGrow);
   chatInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      chatForm.requestSubmit();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); }
   });
 
   chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const text = chatInput.value.trim();
     if (!text) return;
-
     appendMessage("user", text);
     state.history.push({ role: "user", text });
     saveState();
     chatInput.value = "";
     autoGrow();
-
     await requestAiTurn();
   });
 
   async function requestAiTurn(seedHistory) {
     const historyToSend = seedHistory || state.history;
-
     setTyping(true);
     chatInput.disabled = true;
-
     try {
       const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ history: historyToSend, context: state.context }),
       });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || "დაფიქსირდა შეცდომა.");
-
-      if (seedHistory) state.history = []; // seed არ ინახება რეალურ ისტორიაში
-
+      if (seedHistory) state.history = [];
       appendMessage("assistant", data.reply);
       state.history.push({ role: "assistant", text: data.reply });
       saveState();
     } catch (err) {
-      console.error(err);
-      showError(err.message || "AI პასუხის მიღება ვერ მოხერხდა. სცადეთ ხელახლა.");
+      showError(err.message || "AI პასუხის მიღება ვერ მოხერხდა.");
     } finally {
       setTyping(false);
       chatInput.disabled = false;
@@ -588,34 +310,28 @@
     }
   }
 
-  // ---------------------------------------------------------------------
-  // ანალიზის გენერირება
-  // ---------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  // ანალიზის გენერირება → Review/Edit/Confirm
+  // -------------------------------------------------------------------
 
   summaryBtn.addEventListener("click", async () => {
     if (state.history.length === 0) {
       showError("ჯერ საჭიროა მინიმუმ ერთი გაცვლა საუბარში.");
       return;
     }
-
     summaryBtn.disabled = true;
     summaryBtn.textContent = "მუშავდება...";
-
     try {
       const res = await fetch("/api/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ history: state.history, context: state.context }),
       });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || "ანალიზის გენერირება ვერ მოხერხდა.");
-
-      renderSummary(data.summary, data.saved, data.saved_as);
+      renderReview(data.opportunities);
       chatPanel.hidden = true;
-      summaryPanel.hidden = false;
+      reviewPanel.hidden = false;
     } catch (err) {
-      console.error(err);
       showError(err.message || "ანალიზის გენერირება ვერ მოხერხდა.");
     } finally {
       summaryBtn.disabled = false;
@@ -624,56 +340,119 @@
   });
 
   backToChatBtn.addEventListener("click", () => {
-    summaryPanel.hidden = true;
+    reviewPanel.hidden = true;
     chatPanel.hidden = false;
   });
 
-  function renderSummary(summary, saved, savedAs) {
-    const metaParts = [];
-    if (summary.department) metaParts.push(summary.department);
-    if (summary.role) metaParts.push(summary.role);
-    summaryMeta.textContent = metaParts.join(" · ");
-
-    if (saved && savedAs) {
-      savedNote.textContent = `დასკვნა შენახულია JSON ფაილად სერვერზე: data/summaries/${savedAs}`;
-      savedNote.hidden = false;
-    } else {
-      savedNote.hidden = true;
+  function renderReview(opportunities) {
+    opportunitiesList.innerHTML = "";
+    if (!opportunities || opportunities.length === 0) {
+      opportunitiesList.innerHTML = `<div class="review-empty">კონკრეტული საკითხები ვერ გამოვლინდა — შესაძლოა საუბარი ძალიან მოკლე იყო.</div>`;
+      return;
     }
+    opportunities.forEach((opp) => opportunitiesList.appendChild(renderOpportunityCard(opp)));
+  }
 
-    summaryText.textContent = summary.employee_summary || "";
+  function renderOpportunityCard(opp) {
+    const card = document.createElement("div");
+    card.className = "opp-card";
+    card.dataset.id = opp.id;
 
-    findingsList.innerHTML = "";
-    (summary.findings || []).forEach((f) => {
-      const card = document.createElement("div");
-      card.className = "finding";
-      card.dataset.priority = f.priority || "medium";
+    const isConfirmed = opp.status === "confirmed";
+    if (isConfirmed) card.classList.add("is-confirmed");
 
-      card.innerHTML = `
-        <div class="finding-top">
-          <p class="finding-title">${escapeText(f.title || "დასახელების გარეშე")}</p>
-          <div class="finding-tags">
-            <span class="tag tag-priority-${f.priority || "medium"}">${PRIORITY_LABEL[f.priority] || f.priority || ""}</span>
-            <span class="tag">${CATEGORY_LABEL[f.category] || f.category || ""}</span>
-          </div>
+    const fieldHtml = (key, isSelect, options) => {
+      const value = opp[key] || "";
+      const isTextarea = TEXTAREA_FIELDS.includes(key);
+      const fullWidth = isTextarea ? "full" : "";
+      let control;
+      if (isSelect) {
+        control = `<select data-field="${key}" ${isConfirmed ? "disabled" : ""}>` +
+          Object.entries(options).map(([val, label]) =>
+            `<option value="${val}" ${val === value ? "selected" : ""}>${label}</option>`
+          ).join("") + `</select>`;
+      } else if (isTextarea) {
+        control = `<textarea data-field="${key}" rows="2" ${isConfirmed ? "disabled" : ""}>${escapeHtml(value)}</textarea>`;
+      } else {
+        control = `<input type="text" data-field="${key}" value="${escapeAttr(value)}" ${isConfirmed ? "disabled" : ""} />`;
+      }
+      return `<div class="opp-field ${fullWidth}"><label>${FIELD_LABELS[key] || key}</label>${control}</div>`;
+    };
+
+    card.innerHTML = `
+      <div class="opp-card-top">
+        <p class="opp-card-title">${escapeHtml(opp.process || "დასახელების გარეშე")}</p>
+        ${isConfirmed ? '<span class="opp-badge">დადასტურებულია ✓</span>' : ""}
+      </div>
+      <div class="opp-grid">
+        ${fieldHtml("problem")}
+        ${fieldHtml("current_method")}
+        ${fieldHtml("frequency")}
+        ${fieldHtml("time_estimate")}
+        ${fieldHtml("existing_tools")}
+        ${fieldHtml("main_difficulty")}
+        ${fieldHtml("desired_outcome")}
+        <div class="opp-field">
+          <label>კატეგორია</label>
+          <select data-field="solution_category" ${isConfirmed ? "disabled" : ""}>
+            ${Object.entries(CATEGORY_OPTIONS).map(([val, label]) =>
+              `<option value="${val}" ${val === opp.solution_category ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
         </div>
-        <p class="finding-desc">${escapeText(f.description || "")}</p>
-        <div class="finding-meta">
-          <span>სიხშირე: ${escapeText(f.frequency || "უცნობია")}</span>
-          <span>დროის დანაკარგი: ${escapeText(f.time_estimate || "უცნობია")}</span>
+        <div class="opp-field">
+          <label>პრიორიტეტი</label>
+          <select data-field="priority" ${isConfirmed ? "disabled" : ""}>
+            ${Object.entries(PRIORITY_OPTIONS).map(([val, label]) =>
+              `<option value="${val}" ${val === opp.priority ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
         </div>
-      `;
-      findingsList.appendChild(card);
-    });
+        ${fieldHtml("ai_relevance")}
+        ${fieldHtml("automation_relevance")}
+      </div>
+      <div class="opp-actions">
+        ${isConfirmed ? "" : '<button class="btn btn-outline btn-sm" data-action="save">შენახვა (გარეშე დადასტურების)</button>'}
+        ${isConfirmed ? "" : '<button class="btn btn-primary btn-sm" data-action="confirm">დადასტურება</button>'}
+      </div>
+    `;
 
-    if (!summary.findings || summary.findings.length === 0) {
-      findingsList.innerHTML = `<p class="summary-meta">კონკრეტული საკითხები ვერ გამოვლინდა — შესაძლოა საუბარი ძალიან მოკლე იყო.</p>`;
+    const saveBtn = card.querySelector('[data-action="save"]');
+    const confirmBtn = card.querySelector('[data-action="confirm"]');
+    if (saveBtn) saveBtn.addEventListener("click", () => submitOpportunity(card, opp.id, false));
+    if (confirmBtn) confirmBtn.addEventListener("click", () => submitOpportunity(card, opp.id, true));
+
+    return card;
+  }
+
+  async function submitOpportunity(card, id, confirm) {
+    const fields = {};
+    card.querySelectorAll("[data-field]").forEach((el) => { fields[el.dataset.field] = el.value; });
+    fields.confirm = confirm;
+
+    const btns = card.querySelectorAll("button");
+    btns.forEach((b) => (b.disabled = true));
+
+    try {
+      const res = await fetch(`/api/opportunities/${id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(fields),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "შენახვა ვერ მოხერხდა.");
+      const newCard = renderOpportunityCard(data.opportunity);
+      card.replaceWith(newCard);
+    } catch (err) {
+      showError(err.message || "შენახვა ვერ მოხერხდა.");
+      btns.forEach((b) => (b.disabled = false));
     }
   }
 
-  // ---------------------------------------------------------------------
-  // გაშვება
-  // ---------------------------------------------------------------------
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str) {
+    return String(str).replace(/"/g, "&quot;");
+  }
 
   validateSetup();
   restoreIfPossible();

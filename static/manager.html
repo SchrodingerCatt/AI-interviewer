@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manager View — AI ინტერვიუერი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@500;600;700&family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #eef1ee; --surface: #ffffff; --ink: #1f2a24; --ink-soft: #4b5750; --muted: #7b8780;
+    --line: #d9ddd6; --accent: #3f6659; --accent-dark: #2c4a41; --accent-tint: #e2ebe6;
+    --gold: #b8863f; --gold-tint: #f4e9d8; --grey-tint: #eceeec; --error: #a5433a; --error-tint: #f6e4e1;
+    --radius-sm: 6px; --radius-md: 10px;
+    --font-serif: "Noto Serif Georgian", "Noto Serif", serif;
+    --font-sans: "Noto Sans Georgian", "Noto Sans", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  .app { max-width: 1000px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  .app-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+  .app-header h1 { font-family: var(--font-serif); font-weight: 600; font-size: 21px; margin: 0; }
+  .back-link { font-size: 13px; color: var(--ink-soft); text-decoration: none; }
+  .back-link:hover { text-decoration: underline; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .toolbar select, .toolbar input {
+    font-family: var(--font-sans); font-size: 13.5px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); background: var(--surface); color: var(--ink);
+  }
+  .toolbar .count { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+  thead th {
+    text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted);
+    padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--grey-tint);
+  }
+  tbody td { padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { cursor: pointer; transition: background-color .1s ease; }
+  tbody tr:hover { background: var(--accent-tint); }
+
+  .tag { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--grey-tint); color: var(--ink-soft); }
+  .tag-priority-high { background: var(--gold-tint); color: #7a5a24; }
+  .tag-priority-medium { background: var(--accent-tint); color: var(--accent-dark); }
+  .tag-priority-low { background: var(--grey-tint); color: var(--muted); }
+
+  .empty-state { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 40px; text-align: center; color: var(--muted); }
+
+  /* modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(31,42,36,.45); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; z-index: 10; }
+  .modal-overlay[hidden] { display: none; }
+  .modal { background: var(--surface); border-radius: var(--radius-md); max-width: 640px; width: 100%; padding: 24px 28px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .modal-header h2 { font-family: var(--font-serif); font-size: 19px; margin: 0; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+  .modal-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .detail-field { display: flex; flex-direction: column; gap: 3px; }
+  .detail-field.full { grid-column: 1 / -1; }
+  .detail-field label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .detail-field span { font-size: 14px; }
+  .transcript-toggle { font-size: 13px; color: var(--accent-dark); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font-family: var(--font-sans); }
+  .transcript-box { margin-top: 12px; background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; max-height: 260px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; }
+
+  .loading, .error-box { text-align: center; padding: 30px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <h1>Manager View — დადასტურებული opportunity-ები</h1>
+    <a class="back-link" href="/">← ინტერვიუზე დაბრუნება</a>
+  </header>
+
+  <div class="toolbar">
+    <select id="departmentFilter"><option value="">ყველა დეპარტამენტი</option></select>
+    <select id="categoryFilter">
+      <option value="">ყველა კატეგორია</option>
+      <option value="improvement">გაუმჯობესება</option>
+      <option value="automation">ავტომატიზაცია</option>
+      <option value="ai">AI</option>
+    </select>
+    <select id="priorityFilter">
+      <option value="">ყველა პრიორიტეტი</option>
+      <option value="high">მაღალი</option>
+      <option value="medium">საშუალო</option>
+      <option value="low">დაბალი</option>
+    </select>
+    <span id="resultCount" class="count"></span>
+  </div>
+
+  <div id="tableWrap"></div>
+</div>
+
+<div id="modalOverlay" class="modal-overlay" hidden></div>
+
+<script>
+(function () {
+  const CATEGORY_LABEL = { improvement: "გაუმჯობესება", automation: "ავტომატიზაცია", ai: "AI" };
+  const PRIORITY_LABEL = { high: "მაღალი", medium: "საშუალო", low: "დაბალი" };
+  const FIELD_LABELS = {
+    process: "პროცესი", problem: "პრობლემა", current_method: "როგორ კეთდება დღეს",
+    frequency: "სიხშირე", time_estimate: "დროის დანახარჯი", existing_tools: "არსებული ხელსაწყოები",
+    main_difficulty: "მთავარი სირთულე", desired_outcome: "სასურველი შედეგი",
+    ai_relevance: "AI-ს რელევანტობა", automation_relevance: "ავტომატიზაციის რელევანტობა",
+  };
+
+  const tableWrap = document.getElementById("tableWrap");
+  const departmentFilter = document.getElementById("departmentFilter");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const priorityFilter = document.getElementById("priorityFilter");
+  const resultCount = document.getElementById("resultCount");
+  const modalOverlay = document.getElementById("modalOverlay");
+
+  let allOpportunities = [];
+
+  async function load() {
+    tableWrap.innerHTML = `<div class="loading">იტვირთება...</div>`;
+    try {
+      const res = await fetch("/api/opportunities?status=confirmed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "მონაცემების ჩატვირთვა ვერ მოხერხდა.");
+      allOpportunities = data.opportunities || [];
+      populateDepartmentFilter();
+      render();
+    } catch (err) {
+      tableWrap.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function populateDepartmentFilter() {
+    const depts = [...new Set(allOpportunities.map((o) => o.department))].sort();
+    departmentFilter.innerHTML = `<option value="">ყველა დეპარტამენტი</option>` +
+      depts.map((d) => `<option value="${escapeAttr(d)}">${escapeHtml(d)}</option>`).join("");
+  }
+
+  function applyFilters() {
+    return allOpportunities.filter((o) =>
+      (!departmentFilter.value || o.department === departmentFilter.value) &&
+      (!categoryFilter.value || o.solution_category === categoryFilter.value) &&
+      (!priorityFilter.value || o.priority === priorityFilter.value)
+    );
+  }
+
+  function render() {
+    const rows = applyFilters();
+    resultCount.textContent = `${rows.length} ჩანაწერი`;
+
+    if (rows.length === 0) {
+      tableWrap.innerHTML = `<div class="empty-state">დადასტურებული ჩანაწერი ჯერ არ არის.</div>`;
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.innerHTML = `
+      <thead><tr>
+        <th>დეპარტამენტი</th><th>როლი</th><th>Opportunity</th><th>კატეგორია</th><th>პრიორიტეტი</th><th>დადასტურდა</th>
+      </tr></thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector("tbody");
+
+    rows.forEach((o) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(o.department)}</td>
+        <td>${escapeHtml(o.role)}</td>
+        <td>${escapeHtml(o.process || "—")}</td>
+        <td><span class="tag">${CATEGORY_LABEL[o.solution_category] || o.solution_category || "—"}</span></td>
+        <td><span class="tag tag-priority-${o.priority}">${PRIORITY_LABEL[o.priority] || o.priority || "—"}</span></td>
+        <td>${formatDate(o.confirmed_at)}</td>
+      `;
+      tr.addEventListener("click", () => openDetail(o.id));
+      tbody.appendChild(tr);
+    });
+
+    tableWrap.innerHTML = "";
+    tableWrap.appendChild(table);
+  }
+
+  async function openDetail(id) {
+    modalOverlay.innerHTML = `<div class="modal"><div class="loading">იტვირთება...</div></div>`;
+    modalOverlay.hidden = false;
+    try {
+      const res = await fetch(`/api/opportunities/${id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ჩატვირთვა ვერ მოხერხდა.");
+      renderDetail(data.opportunity);
+    } catch (err) {
+      modalOverlay.innerHTML = `<div class="modal"><div class="error-box">${escapeHtml(err.message)}</div></div>`;
+    }
+  }
+
+  function renderDetail(o) {
+    const fieldsHtml = Object.entries(FIELD_LABELS).map(([key, label]) => `
+      <div class="detail-field ${["problem","current_method","main_difficulty","desired_outcome","ai_relevance","automation_relevance"].includes(key) ? "full" : ""}">
+        <label>${label}</label>
+        <span>${escapeHtml(o[key] || "უცნობია")}</span>
+      </div>
+    `).join("");
+
+    const transcript = (o.interview && o.interview.transcript) || [];
+    const transcriptText = transcript.map((m) => `${m.role === "assistant" ? "AI" : "თანამშრომელი"}: ${m.text}`).join("\n\n");
+
+    modalOverlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h2>${escapeHtml(o.process || "Opportunity")}</h2>
+          <button class="modal-close" data-action="close">&times;</button>
+        </div>
+        <p class="modal-meta">${escapeHtml(o.department)} · ${escapeHtml(o.role)} · დადასტურდა: ${formatDate(o.confirmed_at)}</p>
+        <div class="detail-grid">
+          ${fieldsHtml}
+          <div class="detail-field"><label>კატეგორია</label><span>${CATEGORY_LABEL[o.solution_category] || o.solution_category}</span></div>
+          <div class="detail-field"><label>პრიორიტეტი</label><span>${PRIORITY_LABEL[o.priority] || o.priority}</span></div>
+        </div>
+        <button class="transcript-toggle" data-action="toggle-transcript">სრული საუბრის ტრანსკრიპტის ჩვენება</button>
+        <div class="transcript-box" hidden>${escapeHtml(transcriptText)}</div>
+      </div>
+    `;
+
+    modalOverlay.querySelector('[data-action="close"]').addEventListener("click", closeModal);
+    modalOverlay.querySelector('[data-action="toggle-transcript"]').addEventListener("click", (e) => {
+      const box = modalOverlay.querySelector(".transcript-box");
+      box.hidden = !box.hidden;
+      e.target.textContent = box.hidden ? "სრული საუბრის ტრანსკრიპტის ჩვენება" : "დამალვა";
+    });
+  }
+
+  function closeModal() {
+    modalOverlay.hidden = true;
+    modalOverlay.innerHTML = "";
+  }
+
+  modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
+
+  departmentFilter.addEventListener("change", render);
+  categoryFilter.addEventListener("change", render);
+  priorityFilter.addEventListener("change", render);
+
+  function formatDate(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("ka-GE", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    } catch { return iso; }
+  }
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  }
+  function escapeAttr(str) { return String(str).replace(/"/g, "&quot;"); }
+
+  load();
+})();
+</script>
+</body>
+</html>
