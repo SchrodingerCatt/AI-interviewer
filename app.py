@@ -1,33 +1,21 @@
 """
-AI ინტერვიუერი — Flask სერვერი
+AI ინტერვიუერი — Flask სერვერი (v2)
+=====================================
 
+ნაკადი: Interview → Summary (draft opportunities) → Edit/Confirm → Central
+Storage (SQLite) → Manager View.
 
-პასუხისმგებელია:
-  1. სასაუბრო ტურების დამუშავებაზე (/api/chat) — Gemini-სთან საუბრის სრული
-     ისტორიის გაგზავნა, რათა კონტექსტი არასდროს დაიკარგოს.
-  2. სტრუქტურირებული ანალიზის გენერირებაზე (/api/summary) — Gemini-ს
-     "JSON mode"-ის გამოყენებით, შედეგის დისკზე JSON ფაილად შენახვა და
-     frontend-ისთვის დაბრუნება.
-
-როგორ არის AI ინტეგრირებული (მოკლედ):
-  - გამოიყენება Google-ის ოფიციალური Python SDK: `google-genai`.
-  - `google.genai.Client(api_key=...)` იქმნება GEMINI_API_KEY-ით (.env-იდან).
-  - ჩვეულებრივი საუბრის დროს ვქმნით `client.chats.create(...)` სესიას,
-    რომელსაც ვაწვდით მთელ წინა ისტორიას (`history=...`) — ანუ ყოველ
-    მოთხოვნაზე Gemini-ს ეგზავნება სრული საუბრის კონტექსტი, არა მხოლოდ
-    ბოლო შეტყობინება. ეს გამორიცხავს კონტექსტის დაკარგვას.
-  - შეჯამებისას ვიყენებთ ცალკე მოთხოვნას `response_mime_type="application/json"`
-    კონფიგურაციით — Gemini იძულებულია დააბრუნოს მხოლოდ ვალიდური JSON.
-  - მიღებული JSON ინახება დისკზე ფაილად `data/summaries/` საქაღალდეში
-    (თითო საუბარი = ერთი .json ფაილი, დროის შტამპითა და
-    დეპარტამენტი/პოზიციით სახელში).
+განსხვავება v1-თან შედარებით:
+  - ერთი საუბრიდან შეიძლება რამდენიმე დამოუკიდებელი opportunity გამოვიდეს
+    (თითოეული 12 ველით — process, problem, frequency, და ა.შ.)
+  - AI-ის მიერ ამოღებული opportunity-ები ჯერ 'draft' სახით ინახება; მომხმარებელს
+    შეუძლია ნახოს, შეასწოროს და დაადასტუროს თითოეული ცალ-ცალკე
+  - დადასტურებული ჩანაწერები ცენტრალურ SQLite ბაზაშია (db.py), საიდანაც
+    Manager View (/manager.html) კითხულობს ყველა დეპარტამენტის მონაცემს ერთად
 """
 
 import json
 import os
-import re
-from datetime import datetime, timezone
-from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -35,16 +23,16 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 
+import db
+
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-SUMMARIES_DIR = BASE_DIR / "data" / "summaries"
-SUMMARIES_DIR.mkdir(parents=True, exist_ok=True)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
-MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
-MAX_HISTORY_MESSAGES = 40  # უსაფრთხოების ზღვარი — ზედმეტად გრძელი საუბრის თავიდან აცილება
+MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+MAX_HISTORY_MESSAGES = 40
 
 client = None
 if API_KEY:
@@ -56,98 +44,108 @@ else:
     )
 
 app = Flask(__name__, static_folder=None)
+db.init_db()
 
 
-
-# სისტემური ინსტრუქციები (პრომპტები)
-
+# ---------------------------------------------------------------------------
+# სისტემური ინსტრუქციები
+# ---------------------------------------------------------------------------
 
 def build_interview_system_prompt(department: str, role: str) -> str:
-    return f"""შენ ხარ მეგობრული, თუმცა პროფესიონალი AI ინტერვიუერი. შენი ამოცანაა ესაუბრო კომპანიის თანამშრომელს
-მისი ყოველდღიური სამუშაო პროცესების, პრობლემებისა და განმეორებადი (რუტინული) საქმეების შესახებ,
-რათა მოგვიანებით გამოვლინდეს გაუმჯობესების, ავტომატიზაციისა და AI-ის გამოყენების შესაძლებლობები.
+    return f"""შენ ხარ მეგობრული AI ინტერვიუერი. შენი ამოცანაა ესაუბრო კომპანიის თანამშრომელს მისი
+ყოველდღიური სამუშაო პროცესების, პრობლემებისა და განმეორებადი ამოცანების შესახებ, რათა მოგვიანებით
+გამოვლინდეს გაუმჯობესების, ავტომატიზაციისა და AI-ის გამოყენების შესაძლებლობები.
 
 კონტექსტი (უკვე მოწოდებულია — ხელახლა ნუ ჰკითხავ):
 - დეპარტამენტი: {department}
 - პოზიცია/როლი: {role}
 
-ქცევის წესები:
-1. ერთდროულად ერთ კითხვას სვამ — არასდროს აწყობ კითხვების სიას ერთბაშად.
-2. კითხვები დაწყებული უნდა იყოს ზოგადიდან და თანდათან უნდა ხდებოდეს კონკრეტული (funnel მიდგომა).
-3. თუ პასუხი ბუნდოვანია ან ზედაპირულია, დასვი დაზუსტებითი follow-up კითხვა
-   (მაგალითად: "დაახლოებით რამდენ დროს ანდომებთ ამას კვირაში?", "რამდენად ხშირად მეორდება ეს ამოცანა?",
-   "რა ხდება, თუ ეს დროულად არ გაკეთდა?", "რომელი ინსტრუმენტებით/პროგრამებით აკეთებთ ამას ამჟამად?").
-4. დაფარე რამდენიმე თემა: განმეორებადი/რუტინული ამოცანები, დროის დანაკარგი, ხშირი შეცდომები ან ბლოკერები,
-   კომუნიკაცია სხვა გუნდებთან/დეპარტამენტებთან, ხელით (მანუალურად) შესრულებული სამუშაო.
-5. ტონი მეგობრული, პატივისცემიანი და არაფორმალურ-პროფესიონალურია. არასდროს ჟღერს დაკითხვასავით.
-6. პასუხი უნდა იყოს მოკლე და ბუნებრივი — 1-3 წინადადება, არა გრძელი ტექსტის კედელი.
-7. პასუხობ იმავე ენაზე, რომელზეც წერს თანამშრომელი. თუ არ ჩანს ცალსახად, დეფოლტად გამოიყენე ქართული.
-8. თუ თანამშრომელი აშკარად აღნიშნავს, რომ აღარაფერი აქვს დასამატებელი, მადლობა გადაუხადე და შესთავაზე,
-   რომ საუბრის დასრულების შემდეგ შედეგები შეჯამდება ღილაკის საშუალებით.
-9. არასდროს გამოგონო ან არ დაუშვა ვარაუდი კონკრეტულ ფაქტებზე, რომლებიც თანამშრომელს არ უთქვამს."""
+ქცევის წესები — UX ყველაზე მნიშვნელოვანია:
+1. ძალიან მარტივი, ბუნებრივი, მოკლე საუბარი — არა კითხვარის შევსების შეგრძნება.
+2. ერთდროულად ერთი მარტივი კითხვა, ზედმეტი განმარტებებისა და ტექნიკური ტერმინების გარეშე.
+3. follow-up კითხვა დასვი მხოლოდ მაშინ, როცა პასუხისთვის რეალურად საჭიროა — არა ავტომატურად ყოველ პასუხზე.
+   მაგრამ თუ თანამშრომელმა ახსენა კონკრეტული პრობლემა/ამოცანა და **არ დაუზუსტებია სიხშირე ან
+   დახარჯული დრო**, ეს არის შემთხვევა, როცა follow-up რეალურადაა საჭირო — ჰკითხე პირდაპირ (მაგ.
+   "დაახლოებით რამდენჯერ გხდება ეს საჭირო კვირაში/თვეში?"). ნუ ივარაუდებ ამ დეტალებს თავად.
+4. არასდროს გაიმეორო უკვე მიღებული ინფორმაცია.
+5. თუ საკმარისი ინფორმაცია უკვე მიიღე ერთ თემაზე, ხელოვნურად ნუ განაგრძობ — გადადი შემდეგ თემაზე ან დაასრულე.
+6. საუბრის დასაწყისში (პირველივე შენს შეტყობინებაში) მოკლედ აუხსენი მიზანი, მაგ:
+   "რამდენიმე მოკლე კითხვას დაგისვამ თქვენი სამუშაო პროცესებზე — მიზანია ვიპოვოთ სად შეიძლება
+   დროის დაზოგვა ან გამარტივება. საუბარი მოკლე იქნება."
+7. საუბრის შუა ეტაპზე, თუ ბუნებრივად გამოდგება, მიანიშნე პროგრესზე (მაგ. "კიდევ ერთ-ორ საკითხს შევეხოთ")
+   — მაგრამ ეს არ უნდა იყოს ხელოვნურად ფიქსირებული რიცხვი.
+8. პასუხი 1-2 წინადადებით, არა გრძელი ტექსტის კედელი.
+9. პასუხობ იმავე ენაზე, რომელზეც წერს თანამშრომელი (დეფოლტად ქართული).
+10. თუ თანამშრომელი ამბობს, რომ აღარაფერი აქვს დასამატებელი — მადლობა გადაუხადე და შესთავაზე
+    შედეგების შეჯამებას ღილაკის საშუალებით.
+11. არასდროს გამოიგონო ფაქტი, რომელიც თანამშრომელს არ უთქვამს.
+
+მთავარი პრინციპი: შენ არ "გამოჰკითხავ" ადამიანს — ეხმარები მას პრობლემის სწრაფად ჩამოყალიბებაში."""
 
 
 def build_summary_system_prompt(department: str, role: str) -> str:
-    return f"""შენ იღებ თანამშრომელთან ჩატარებული ინტერვიუს სრულ ტრანსკრიპტს (დეპარტამენტი: {department}, როლი: {role})
-და შენი ამოცანაა ის დააკონვერტირო სტრუქტურირებულ JSON-ად.
+    return f"""შენ იღებ თანამშრომელთან ჩატარებული ინტერვიუს სრულ ტრანსკრიპტს (დეპარტამენტი: {department},
+როლი: {role}) და შენი ამოცანაა ის დაშალო **დამოუკიდებელ opportunity-ებად**.
 
-დააბრუნე მხოლოდ ვალიდური JSON ობიექტი (დამატებითი ტექსტის, ახსნის ან Markdown-ის გარეშე), ზუსტად ამ სქემით:
+თუ საუბარში რამდენიმე განსხვავებული პრობლემა/პროცესი აღინიშნა (მაგ. ანგარიშების ხელით გაერთიანება
+და ცალკე — განმეორებადი წერილების მომზადება) — ეს არის ორი ცალკეული opportunity, არა ერთი საერთო
+შეჯამება.
+
+დააბრუნე მხოლოდ ვალიდური JSON ობიექტი (დამატებითი ტექსტის ან Markdown-ის გარეშე), ზუსტად ამ სქემით:
 
 {{
-  "department": string,
-  "role": string,
-  "employee_summary": string,
-  "findings": [
+  "opportunities": [
     {{
-      "title": string,
-      "description": string,
-      "frequency": string,
-      "time_estimate": string,
-      "category": "improvement" | "automation" | "ai",
+      "process": string,              // რომელ პროცესს ეხება (მოკლე სახელი)
+      "problem": string,              // კონკრეტული პრობლემა
+      "current_method": string,       // როგორ კეთდება დღეს (ხელით/რომელი ხელსაწყოთი)
+      "frequency": string,            // მაგ. "თვეში ერთხელ", "უცნობია"
+      "time_estimate": string,        // მაგ. "~3 საათი", "უცნობია"
+      "existing_tools": string,       // Excel, ელფოსტა და ა.შ., ან "უცნობია"
+      "main_difficulty": string,      // მთავარი სირთულე/ბლოკერი
+      "desired_outcome": string,      // რას სურს თანამშრომელი საბოლოოდ
+      "solution_category": "improvement" | "automation" | "ai",
+      "ai_relevance": string,         // მოკლედ, რატომ/როგორ დაეხმარება AI (ან "დაბალი რელევანტობა")
+      "automation_relevance": string, // მოკლედ, რატომ/როგორ დაეხმარება ავტომატიზაცია (ან "დაბალი რელევანტობა")
       "priority": "high" | "medium" | "low"
     }}
   ]
 }}
 
 წესები:
-- "findings" მასივში ჩაწერე მხოლოდ ის საკითხები, რომლებიც რეალურად აღინიშნა საუბარში.
-- თუ კონკრეტული ველისთვის ინფორმაცია ტრანსკრიპტში არ მოიძებნა, ჩაწერე "უცნობია" და ნუ იხვეწ.
-- "category" აირჩიე იმის მიხედვით, თუ რა ტიპის ჩარევაა ყველაზე შესაფერისი:
-  "improvement" — პროცესის/ორგანიზების გაუმჯობესება ტექნოლოგიის გარეშე;
-  "automation" — წესებზე დაფუძნებული ავტომატიზაცია (სკრიპტი, ინტეგრაცია, workflow);
-  "ai" — ამოცანა, სადაც სასარგებლო იქნება AI (გენერაცია, კლასიფიკაცია, ანალიზი, ბუნებრივი ენა).
-- "priority" განსაზღვრე სიხშირისა და დროის დანაკარგის მიხედვით (რაც მეტია ორივე — მით მაღალია პრიორიტეტი).
+- თუ კონკრეტული ველისთვის ინფორმაცია ტრანსკრიპტში არ მოიძებნა, ჩაწერე ზუსტად "უცნობია" — არასდროს
+  გამოიგონო.
+- **განსაკუთრებით მკაცრი წესი ფაქტობრივ სიზუსტეზე**: ველის შევსება დასაშვებია **მხოლოდ** მაშინ, თუ
+  თანამშრომელმა ეს პირდაპირ/სიტყვასიტყვით თქვა ტრანსკრიპტში. აკრძალულია "ტიპური" ან "სავარაუდო"
+  მნიშვნელობის ჩაწერა საკუთარი ცოდნის/გამოცდილების საფუძველზე — მაგალითად, თუ თანამშრომელმა თქვა
+  მხოლოდ "CV-ебის გადარჩევა მიწევს", **არ არის დასაშვები** ვივარაუდო, რომ ეს "ყოველდღიურად" ხდება,
+  თუნდაც ეს ტიპური HR ამოცანად გეჩვენებოდეს. `frequency`, `time_estimate` და ყველა სხვა ფაქტობრივი
+  ველი ივსება მხოლოდ იმით, რაც პირდაპირ ითქვა — წინააღმდეგ შემთხვევაში ყოველთვის "უცნობია".
+  ორჯერ გადაამოწმე თითოეული ველი შევსებამდე: "ეს ზუსტად ეს სიტყვებით/რიცხვით თქვა თანამშრომელმა,
+  თუ მე ვასკვნი ამას საერთო ლოგიკიდან?" — თუ ეჭვი გაქვს, ჩაწერე "უცნობია".
+- "priority" განსაზღვრე სიხშირისა და დროის დანაკარგის მიხედვით.
+- თუ საუბარში საერთოდ ვერცერთი კონკრეტული პრობლემა ვერ გამოიკვეთა, დააბრუნე ცარიელი მასივი: {{"opportunities": []}}
 - დააბრუნე მხოლოდ JSON, არაფერი მეტი."""
 
 
+# ---------------------------------------------------------------------------
+# დამხმარეები
+# ---------------------------------------------------------------------------
 
-
-def to_gemini_contents(history: list[dict]) -> list[types.Content]:
-    """მთელი საუბრის ისტორია გარდაქმნის Gemini-ის Content ობიექტების სიად.
-    ეს არის ის მექანიზმი, რომელიც უზრუნველყოფს, რომ AI-მ არასდროს დაკარგოს
-    კონტექსტი: ყოველ ტურზე ვუგზავნით არა მხოლოდ ბოლო შეტყობინებას,
-    არამედ საუბრის დასაწყისიდან მოყოლებულ ყველა გაცვლას."""
+def to_gemini_contents(history: list) -> list:
     contents = []
     for m in history:
         role = "model" if m.get("role") == "assistant" else "user"
-        contents.append(
-            types.Content(role=role, parts=[types.Part(text=str(m.get("text", "")))])
-        )
+        contents.append(types.Content(role=role, parts=[types.Part(text=str(m.get("text", "")))]))
     return contents
 
 
-def transcript_to_text(history: list[dict]) -> str:
+def transcript_to_text(history: list) -> str:
     lines = []
     for m in history:
         speaker = "AI" if m.get("role") == "assistant" else "თანამშრომელი"
         lines.append(f"{speaker}: {m.get('text', '')}")
     return "\n".join(lines)
-
-
-def safe_slug(value: str) -> str:
-    value = (value or "").strip() or "unknown"
-    value = re.sub(r"[^\w\-]+", "_", value, flags=re.UNICODE)
-    return value[:40] or "unknown"
 
 
 def ensure_configured():
@@ -162,26 +160,32 @@ def validate_context(context: dict):
     department = (context or {}).get("department", "")
     role = (context or {}).get("role", "")
     if not str(department).strip() or not str(role).strip():
-        return None, None, (
-            jsonify({"error": "დეპარტამენტი და პოზიცია სავალდებულო ველებია."}),
-            400,
-        )
+        return None, None, (jsonify({"error": "დეპარტამენტი და პოზიცია სავალდებულო ველებია."}), 400)
     return department, role, None
 
 
-
-# routes
-
+# ---------------------------------------------------------------------------
+# სტატიკური გვერდები
+# ---------------------------------------------------------------------------
 
 @app.route("/")
 def index():
     return send_from_directory(STATIC_DIR, "index.html")
 
 
+@app.route("/manager.html")
+def manager_page():
+    return send_from_directory(STATIC_DIR, "manager.html")
+
+
 @app.route("/api/health")
 def health():
     return jsonify({"status": "ok", "configured": client is not None})
 
+
+# ---------------------------------------------------------------------------
+# ინტერვიუ
+# ---------------------------------------------------------------------------
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -212,12 +216,10 @@ def chat():
             config=types.GenerateContentConfig(
                 system_instruction=build_interview_system_prompt(department, role),
             ),
-            # >>> სრული წინა ისტორია — კონტექსტი ყოველთვის შენარჩუნებულია <<<
             history=to_gemini_contents(history[:-1]),
         )
         result = chat_session.send_message(last_message["text"])
-        reply = result.text
-        return jsonify({"reply": reply})
+        return jsonify({"reply": result.text})
     except APIError as exc:
         app.logger.error("Gemini /api/chat APIError: %s", exc)
         return jsonify({"error": "AI პასუხის მიღება ვერ მოხერხდა. სცადეთ ხელახლა."}), 502
@@ -225,6 +227,10 @@ def chat():
         app.logger.exception("გაუთვალისწინებელი შეცდომა /api/chat-ში")
         return jsonify({"error": "მოულოდნელი შეცდომა. სცადეთ ხელახლა."}), 500
 
+
+# ---------------------------------------------------------------------------
+# შეჯამება → draft opportunities (Review ეტაპისთვის)
+# ---------------------------------------------------------------------------
 
 @app.route("/api/summary", methods=["POST"])
 def summary():
@@ -255,8 +261,11 @@ def summary():
             ),
         )
         raw_text = response.text
-        parsed_summary = json.loads(raw_text)
-    except json.JSONDecodeError:
+        parsed = json.loads(raw_text)
+        opportunities_data = parsed.get("opportunities", [])
+        if not isinstance(opportunities_data, list):
+            raise ValueError("'opportunities' არ არის მასივი")
+    except (json.JSONDecodeError, ValueError):
         app.logger.error("JSON პარსინგის შეცდომა, ნედლი პასუხი: %s", raw_text)
         return jsonify({"error": "AI-ის პასუხის სტრუქტურირება ვერ მოხერხდა."}), 502
     except APIError as exc:
@@ -266,39 +275,48 @@ def summary():
         app.logger.exception("გაუთვალისწინებელი შეცდომა /api/summary-ში")
         return jsonify({"error": "მოულოდნელი შეცდომა. სცადეთ ხელახლა."}), 500
 
-    # ------------------------------------------------------------------
-    # დასკვნის შენახვა დისკზე, JSON ფაილად
-    # (მნიშვნელოვანია: Render-ის უფასო ტარიფზე დისკი ეფემერულია — ფაილები
-    #  არ გადარჩება redeploy-სა თუ სერვერის გადატვირთვას. production-ისთვის
-    #  საჭირო იქნება მუდმივი მონაცემთა ბაზა ან persistent disk — იხ. README.)
-    # ------------------------------------------------------------------
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    filename = f"{timestamp}_{safe_slug(department)}_{safe_slug(role)}.json"
-    filepath = SUMMARIES_DIR / filename
+    # ცენტრალურ ბაზაში ჩაწერა — interview + draft opportunities
+    interview_id = db.create_interview(department, role, history)
+    saved_opportunities = db.create_opportunities(interview_id, opportunities_data)
 
-    record = {
-        "generated_at": timestamp,
-        "department": department,
-        "role": role,
-        "transcript": history,
-        "summary": parsed_summary,
-    }
+    return jsonify({"interview_id": interview_id, "opportunities": saved_opportunities})
 
-    saved = True
-    try:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(record, f, ensure_ascii=False, indent=2)
-    except OSError:
-        app.logger.exception("დასკვნის დისკზე შენახვა ვერ მოხერხდა")
-        saved = False
 
-    return jsonify(
-        {
-            "summary": parsed_summary,
-            "saved": saved,
-            "saved_as": filename if saved else None,
-        }
-    )
+# ---------------------------------------------------------------------------
+# Review / Edit / Confirm
+# ---------------------------------------------------------------------------
+
+@app.route("/api/opportunities/<int:opportunity_id>", methods=["GET"])
+def get_opportunity(opportunity_id):
+    opp = db.get_opportunity_with_interview(opportunity_id)
+    if not opp:
+        return jsonify({"error": "ჩანაწერი ვერ მოიძებნა."}), 404
+    return jsonify({"opportunity": opp})
+
+
+@app.route("/api/opportunities/<int:opportunity_id>", methods=["PUT"])
+def update_opportunity(opportunity_id):
+    data = request.get_json(silent=True) or {}
+    fields = {k: v for k, v in data.items() if k in db.OPPORTUNITY_FIELDS}
+    confirm = bool(data.get("confirm", False))
+
+    updated = db.update_opportunity(opportunity_id, fields, confirm=confirm)
+    if not updated:
+        return jsonify({"error": "ჩანაწერი ვერ მოიძებნა."}), 404
+
+    return jsonify({"opportunity": updated})
+
+
+# ---------------------------------------------------------------------------
+# Manager View API
+# ---------------------------------------------------------------------------
+
+@app.route("/api/opportunities", methods=["GET"])
+def list_opportunities():
+    status = request.args.get("status", "confirmed")
+    if status != "confirmed":
+        return jsonify({"error": "მხოლოდ status=confirmed არის მხარდაჭერილი ამ ეტაპზე."}), 400
+    return jsonify({"opportunities": db.list_confirmed_opportunities()})
 
 
 if __name__ == "__main__":
