@@ -1,6 +1,6 @@
 """
 AI ინტერვიუერი — Flask სერვერი (v2)
-
+=====================================
 
 ნაკადი: Interview → Summary (draft opportunities) → Edit/Confirm → Central
 Storage (SQLite) → Manager View.
@@ -47,8 +47,9 @@ app = Flask(__name__, static_folder=None)
 db.init_db()
 
 
+# ---------------------------------------------------------------------------
 # სისტემური ინსტრუქციები
-
+# ---------------------------------------------------------------------------
 
 def build_interview_system_prompt(department: str, role: str) -> str:
     return f"""შენ ხარ მეგობრული AI ინტერვიუერი. შენი ამოცანაა ესაუბრო კომპანიის თანამშრომელს მისი
@@ -127,8 +128,9 @@ def build_summary_system_prompt(department: str, role: str) -> str:
 - დააბრუნე მხოლოდ JSON, არაფერი მეტი."""
 
 
+# ---------------------------------------------------------------------------
 # დამხმარეები
-
+# ---------------------------------------------------------------------------
 
 def to_gemini_contents(history: list) -> list:
     contents = []
@@ -162,8 +164,9 @@ def validate_context(context: dict):
     return department, role, None
 
 
+# ---------------------------------------------------------------------------
 # სტატიკური გვერდები
-
+# ---------------------------------------------------------------------------
 
 @app.route("/")
 def index():
@@ -180,8 +183,9 @@ def health():
     return jsonify({"status": "ok", "configured": client is not None})
 
 
+# ---------------------------------------------------------------------------
 # ინტერვიუ
-
+# ---------------------------------------------------------------------------
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -224,9 +228,9 @@ def chat():
         return jsonify({"error": "მოულოდნელი შეცდომა. სცადეთ ხელახლა."}), 500
 
 
-
+# ---------------------------------------------------------------------------
 # შეჯამება → draft opportunities (Review ეტაპისთვის)
-
+# ---------------------------------------------------------------------------
 
 @app.route("/api/summary", methods=["POST"])
 def summary():
@@ -278,9 +282,9 @@ def summary():
     return jsonify({"interview_id": interview_id, "opportunities": saved_opportunities})
 
 
-
+# ---------------------------------------------------------------------------
 # Review / Edit / Confirm
-
+# ---------------------------------------------------------------------------
 
 @app.route("/api/opportunities/<int:opportunity_id>", methods=["GET"])
 def get_opportunity(opportunity_id):
@@ -303,9 +307,9 @@ def update_opportunity(opportunity_id):
     return jsonify({"opportunity": updated})
 
 
-
+# ---------------------------------------------------------------------------
 # Manager View API
-
+# ---------------------------------------------------------------------------
 
 @app.route("/api/opportunities", methods=["GET"])
 def list_opportunities():
